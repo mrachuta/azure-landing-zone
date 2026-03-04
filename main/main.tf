@@ -1,85 +1,140 @@
-module "core" {
-  source = "../core"
+module "management" {
+  source = "../management"
 
-  client_id                   = var.client_id
-  client_certificate_path     = var.client_certificate_path
-  client_certificate_password = var.client_certificate_password
-  tenant_id                   = var.tenant_id
-  subscription_id             = var.subscription_id
+  providers = {
+    azurerm = azurerm.pfmmgmt
+  }
 
-  subscription_budget_name                        = var.subscription_budget_name
-  subscription_budget_start_date                  = var.subscription_budget_start_date
-  subscription_budget_end_date                    = var.subscription_budget_end_date
-  subscription_budget_notification_contact_emails = var.subscription_budget_notification_contact_emails
+  pfmmgmt_client_id                   = var.pfmmgmt_client_id
+  pfmmgmt_client_certificate_path     = var.pfmmgmt_client_certificate_path
+  pfmmgmt_client_certificate_password = var.pfmmgmt_client_certificate_password
+  pfmmgmt_tenant_id                   = var.pfmmgmt_tenant_id
+  pfmmgmt_subscription_id             = var.pfmmgmt_subscription_id
 
-  projects_resource_groups = var.projects_resource_groups
+  pfmmgmt_budget_name                        = var.pfmmgmt_budget_name
+  pfmmgmt_budget_monthly_amount              = var.pfmmgmt_budget_monthly_amount
+  pfmmgmt_budget_start_date                  = var.pfmmgmt_budget_start_date
+  pfmmgmt_budget_end_date                    = var.pfmmgmt_budget_end_date
+  pfmmgmt_budget_notification_contact_emails = var.pfmmgmt_budget_notification_contact_emails
+  pfmmgmt_allowed_locations                  = var.pfmmgmt_allowed_locations
+  pfmmgmt_platform_location                  = var.pfmmgmt_platform_location
+
+  pfmmgmt_deny_public_ip_exclusions = var.pfmmgmt_deny_public_ip_exclusions
+
+  pfmmgmt_platform_management_resource_group_name = var.pfmmgmt_platform_management_resource_group_name
+  pfmmgmt_platform_identity_resource_group_tags   = var.pfmmgmt_platform_identity_resource_group_tags
+  pfmmgmt_platform_identity_resource_group_name   = var.pfmmgmt_platform_identity_resource_group_name
+  pfmmgmt_platform_management_resource_group_tags = var.pfmmgmt_platform_management_resource_group_tags
+  pfmmgmt_platform_security_resource_group_name   = var.pfmmgmt_platform_security_resource_group_name
+  pfmmgmt_platform_networking_resource_group_name = var.pfmmgmt_platform_networking_resource_group_name
+  pfmmgmt_platform_security_resource_group_tags   = var.pfmmgmt_platform_security_resource_group_tags
+  pfmmgmt_platform_networking_resource_group_tags = var.pfmmgmt_platform_networking_resource_group_tags
+
+  pfmmgmt_projects_resource_groups = var.pfmmgmt_projects_resource_groups
+}
+
+module "identity" {
+  source = "../identity"
+
+  providers = {
+    azurerm = azurerm.pfmident
+  }
+  depends_on = [module.management]
+  # TODO Create groups for projects with role contributor
+  # TODO Create service principal for project
+  # TODO Generate key and put to vault?
+  pfmident_client_id                   = var.pfmident_client_id
+  pfmident_client_certificate_path     = var.pfmident_client_certificate_path
+  pfmident_client_certificate_password = var.pfmident_client_certificate_password
+  pfmident_tenant_id                   = var.pfmident_tenant_id
+  pfmident_subscription_id             = var.pfmident_subscription_id
+
+  pfmident_platform_management_resource_group_name = var.pfmident_platform_management_resource_group_name
+  pfmident_platform_identity_resource_group_name   = var.pfmident_platform_identity_resource_group_name
+  pfmident_platform_security_resource_group_name   = var.pfmident_platform_security_resource_group_name
+  pfmident_platform_networking_resource_group_name = var.pfmident_platform_networking_resource_group_name
+  pfmident_groups                                  = var.pfmident_groups
+  pfmident_platform_management_team_members        = var.pfmident_platform_management_team_members
+  pfmident_platform_identity_team_members          = var.pfmident_platform_identity_team_members
+  pfmident_platform_security_team_members          = var.pfmident_platform_networking_team_members
+  pfmident_platform_networking_team_members        = var.pfmident_platform_networking_team_members
+  pfmident_platform_custom_permissions             = var.pfmident_platform_custom_permissions
+}
+
+module "security" {
+  source = "../security"
+
+  providers = {
+    azurerm = azurerm.pfmsec
+  }
+  depends_on = [
+    module.management,
+    module.identity
+  ]
+
+  pfmsec_client_id                   = var.pfmsec_client_id
+  pfmsec_client_certificate_path     = var.pfmsec_client_certificate_path
+  pfmsec_client_certificate_password = var.pfmsec_client_certificate_password
+  pfmsec_tenant_id                   = var.pfmsec_tenant_id
+  pfmsec_subscription_id             = var.pfmsec_subscription_id
+
+  pfmsec_resource_group_name                            = var.pfmsec_resource_group_name
+  pfmsec_security_center_contact_name                   = var.pfmsec_security_center_contact_name
+  pfmsec_security_center_contact_email                  = var.pfmsec_security_center_contact_email
+  pfmsec_security_center_contact_phone                  = var.pfmsec_security_center_contact_phone
+  pfmsec_security_center_resources_and_tiers            = var.pfmsec_security_center_resources_and_tiers
+  pfmsec_security_objects_common_tags                   = var.pfmsec_security_objects_common_tags
+  pfmsec_audit_logs_analytics_workspace_name            = var.pfmsec_audit_logs_analytics_workspace_name
+  pfmsec_audit_logs_analytics_workspace_tags            = var.pfmsec_audit_logs_analytics_workspace_tags
+  pfmsec_audit_logs_subscription_audit_log_forward_name = var.pfmsec_audit_logs_subscription_audit_log_forward_name
+  pfmsec_key_vault_name                                 = var.pfmsec_key_vault_name
+  pfmsec_key_vault_tags                                 = var.pfmsec_key_vault_tags
+  pfmsec_default_cmek_disk_key                          = var.pfmsec_default_cmek_disk_key
+
 }
 
 module "network" {
   source = "../network"
 
-  client_id                   = var.client_id
-  client_certificate_path     = var.client_certificate_path
-  client_certificate_password = var.client_certificate_password
-  tenant_id                   = var.tenant_id
-  subscription_id             = var.subscription_id
+  providers = {
+    azurerm = azurerm.pfmnet
+  }
+  depends_on = [
+    module.management,
+    module.identity,
+    module.security
+  ]
 
-  hub_resource_group_name                            = var.hub_resource_group_name
-  hub_resource_group_location                        = var.hub_resource_group_location
-  hub_network_name                                   = var.hub_network_name
-  hub_network_address_space                          = var.hub_network_address_space
-  hub_network_subnet_backup_name                     = var.hub_network_subnet_backup_name
-  hub_network_subnet_backup_address_prefixes         = var.hub_network_subnet_backup_address_prefixes
-  hub_network_subnet_gateway_address_prefixes        = var.hub_network_subnet_gateway_address_prefixes
-  hub_virtual_network_gateway_public_ip_name         = var.hub_virtual_network_gateway_public_ip_name
-  hub_virtual_network_gateway_name                   = var.hub_virtual_network_gateway_name
-  hub_local_network_gateway_onprem_name              = var.hub_local_network_gateway_onprem_name
-  hub_local_network_gateway_onprem_address           = var.hub_local_network_gateway_onprem_address
-  hub_local_network_gateway_onprem_address_space     = var.hub_local_network_gateway_onprem_address_space
-  hub_virtual_network_gateway_connection_onprem_name = var.hub_virtual_network_gateway_connection_onprem_name
-  hub_virtual_network_gateway_connection_onprem_key  = var.hub_virtual_network_gateway_connection_onprem_key
+  pfmnet_client_id                   = var.pfmnet_client_id
+  pfmnet_client_certificate_path     = var.pfmnet_client_certificate_path
+  pfmnet_client_certificate_password = var.pfmnet_client_certificate_password
+  pfmnet_tenant_id                   = var.pfmnet_tenant_id
+  pfmnet_subscription_id             = var.pfmnet_subscription_id
 
-  projects_resource_groups_names = module.core.projects_resource_groups_names
-  projects_network_configuration = var.projects_network_configuration
+  pfmnet_resource_group_name                                = var.pfmnet_resource_group_name
+  pfmnet_hub_objects_common_tags                            = var.pfmnet_hub_objects_common_tags
+  pfmnet_hub_network_name                                   = var.pfmnet_hub_network_name
+  pfmnet_hub_network_tags                                   = var.pfmnet_hub_network_tags
+  pfmnet_hub_network_address_space                          = var.pfmnet_hub_network_address_space
+  pfmnet_hub_network_subnet_backup_name                     = var.pfmnet_hub_network_subnet_backup_name
+  pfmnet_hub_network_subnet_backup_address_prefixes         = var.pfmnet_hub_network_subnet_backup_address_prefixes
+  pfmnet_hub_network_subnet_gateway_address_prefixes        = var.pfmnet_hub_network_subnet_gateway_address_prefixes
+  pfmnet_network_watcher_name                               = var.pfmnet_network_watcher_name
+  pfmnet_network_watcher_tags                               = var.pfmnet_network_watcher_tags
+  pfmnet_hub_virtual_network_gateway_public_ip_name         = var.pfmnet_hub_virtual_network_gateway_public_ip_name
+  pfmnet_hub_virtual_network_gateway_public_ip_tags         = var.pfmnet_hub_virtual_network_gateway_public_ip_tags
+  pfmnet_hub_virtual_network_gateway_name                   = var.pfmnet_hub_virtual_network_gateway_name
+  pfmnet_hub_virtual_network_gateway_tags                   = var.pfmnet_hub_virtual_network_gateway_tags
+  pfmnet_hub_local_network_gateway_onprem_name              = var.pfmnet_hub_local_network_gateway_onprem_name
+  pfmnet_hub_local_network_gateway_onprem_tags              = var.pfmnet_hub_local_network_gateway_onprem_tags
+  pfmnet_hub_local_network_gateway_onprem_address           = var.pfmnet_hub_local_network_gateway_onprem_address
+  pfmnet_hub_local_network_gateway_onprem_address_space     = var.pfmnet_hub_local_network_gateway_onprem_address_space
+  pfmnet_hub_virtual_network_gateway_connection_onprem_name = var.pfmnet_hub_virtual_network_gateway_connection_onprem_name
+  pfmnet_hub_virtual_network_gateway_connection_onprem_tags = var.pfmnet_hub_virtual_network_gateway_connection_onprem_tags
+  pfmnet_hub_virtual_network_gateway_connection_onprem_key  = var.pfmnet_hub_virtual_network_gateway_connection_onprem_key
+
+  # pfmnet_projects_resource_groups_names = module.management.pfmmgmt_projects_resource_groups
+  pfmnet_projects_network_configuration = var.pfmnet_projects_network_configuration
 
 }
 
-module "project_dev_playground" {
-  source = "../project"
-
-  client_id                   = var.client_id
-  client_certificate_path     = var.client_certificate_path
-  client_certificate_password = var.client_certificate_password
-  tenant_id                   = var.tenant_id
-  subscription_id             = var.subscription_id
-
-  project_resource_group_name     = var.project_dev_playground_resource_group_name
-  project_resource_group_location = var.project_dev_playground_resource_group_location
-  project_network_name            = var.project_dev_playground_network_name
-
-  vngtest_subnet_name            = var.project_dev_playground_vngtest_subnet_name
-  vngtest_vm_name                = var.project_dev_playground_vngtest_vm_name
-  vngtest_network_interface_name = var.project_dev_playground_vngtest_network_interface_name
-  vngtest_vm_ssh_public_key_path = var.project_dev_playground_vngtest_vm_ssh_public_key_path
-  vngtest_vm_image_details       = var.project_dev_playground_vngtest_vm_image_details
-}
-
-module "project_prd_kubespace" {
-  source = "../project"
-
-  client_id                   = var.client_id
-  client_certificate_path     = var.client_certificate_path
-  client_certificate_password = var.client_certificate_password
-  tenant_id                   = var.tenant_id
-  subscription_id             = var.subscription_id
-
-  project_resource_group_name     = var.project_prd_kubespace_resource_group_name
-  project_resource_group_location = var.project_prd_kubespace_resource_group_location
-  project_network_name            = var.project_prd_kubespace_network_name
-
-  vngtest_subnet_name            = var.project_prd_kubespace_vngtest_subnet_name
-  vngtest_vm_name                = var.project_prd_kubespace_vngtest_vm_name
-  vngtest_network_interface_name = var.project_prd_kubespace_vngtest_network_interface_name
-  vngtest_vm_ssh_public_key_path = var.project_prd_kubespace_vngtest_vm_ssh_public_key_path
-  vngtest_vm_image_details       = var.project_prd_kubespace_vngtest_vm_image_details
-}

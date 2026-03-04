@@ -1,192 +1,337 @@
-variable "client_certificate_password" {
+### Management module variables
 
+variable "pfmmgmt_client_certificate_password" {}
+variable "pfmmgmt_client_certificate_path" {}
+variable "pfmmgmt_client_id" {}
+variable "pfmmgmt_tenant_id" {}
+variable "pfmmgmt_subscription_id" {}
+
+variable "pfmmgmt_budget_name" {
+  type    = string
+  default = "bud-prd-pfmmgmt-global-01"
 }
-
-variable "client_certificate_path" {
-
+variable "pfmmgmt_budget_monthly_amount" {
+  type    = number
+  default = 30
 }
-
-variable "client_id" {
-
+variable "pfmmgmt_budget_start_date" {
+  type    = string
+  default = null
 }
-
-variable "tenant_id" {
-
+variable "pfmmgmt_budget_end_date" {
+  type    = string
+  default = null
 }
-
-variable "subscription_id" {
-
+variable "pfmmgmt_budget_notification_contact_emails" {
+  type    = list(string)
+  default = []
 }
-
-# Core module variables
-
-variable "subscription_budget_name" {
-
+variable "pfmmgmt_allowed_locations" {
+  type    = list(string)
+  default = ["northcentralus", "eastus"]
 }
-
-variable "subscription_budget_start_date" {
-  
+variable "pfmmgmt_platform_location" {
+  type    = string
+  default = "eastus"
 }
-
-variable "subscription_budget_end_date" {
-  
+variable "pfmmgmt_deny_public_ip_exclusions" {
+  type    = list(string)
+  default = []
 }
-
-variable "subscription_budget_notification_contact_emails" {
-  
+variable "pfmmgmt_platform_management_resource_group_name" {
+  type    = string
+  default = null
 }
-
-variable "projects_resource_groups" {
-  type = map(object({
+variable "pfmmgmt_platform_management_resource_group_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmmgmt_platform_identity_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmmgmt_platform_identity_resource_group_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmmgmt_platform_security_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmmgmt_platform_security_resource_group_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmmgmt_platform_networking_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmmgmt_platform_networking_resource_group_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmmgmt_projects_resource_groups" {
+  type = list(object({
+    project_id              = string
     resource_group_name     = string
     resource_group_location = string
     resource_group_tags     = map(string)
   }))
+  default = []
 }
 
-# Network module variables
+### Identity module variables
 
-variable "hub_resource_group_name" {
-  
+variable "pfmident_client_certificate_password" {}
+variable "pfmident_client_certificate_path" {}
+variable "pfmident_client_id" {}
+variable "pfmident_tenant_id" {}
+variable "pfmident_subscription_id" {}
+
+variable "pfmident_platform_management_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmident_platform_identity_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmident_platform_security_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmident_platform_networking_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmident_groups" {
+  type = list(object({
+    name        = string
+    description = string
+  }))
+  default = []
+}
+variable "pfmident_platform_management_team_members" {
+  type = list(object({
+    type                    = string
+    name                    = string
+    identity_resource_group = optional(string)
+  }))
+  default = []
+}
+variable "pfmident_platform_identity_team_members" {
+  type = list(object({
+    type                    = string
+    name                    = string
+    identity_resource_group = optional(string)
+  }))
+  default = []
+}
+variable "pfmident_platform_security_team_members" {
+  type = list(object({
+    type                    = string
+    name                    = string
+    identity_resource_group = optional(string)
+  }))
+  default = []
+}
+variable "pfmident_platform_networking_team_members" {
+  type = list(object({
+    type                    = string
+    name                    = string
+    identity_resource_group = optional(string)
+  }))
+  default = []
+}
+variable "pfmident_platform_custom_permissions" {
+  type = list(object({
+    type                    = string
+    name                    = string
+    identity_resource_group = optional(string)
+    role_definition_name    = string
+    scope                   = string
+  }))
+  default = []
 }
 
-variable "hub_resource_group_location" {
-  
+### Security module variables
+
+variable "pfmsec_client_certificate_password" {}
+variable "pfmsec_client_certificate_path" {}
+variable "pfmsec_client_id" {}
+variable "pfmsec_tenant_id" {}
+variable "pfmsec_subscription_id" {}
+
+variable "pfmsec_resource_group_name" {
+  type    = string
+  default = null
+}
+variable "pfmsec_security_objects_common_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmsec_audit_logs_analytics_workspace_name" {
+  type    = string
+  default = null
+}
+variable "pfmsec_audit_logs_analytics_workspace_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmsec_audit_logs_subscription_audit_log_forward_name" {
+  type    = string
+  default = null
+}
+variable "pfmsec_key_vault_name" {
+  type    = string
+  default = null
+}
+variable "pfmsec_key_vault_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmsec_default_cmek_disk_key" {
+  type = list(object({
+    name                     = string
+    tags                     = map(string)
+    disk_encryption_set_name = string
+    disk_encryption_set_tags = map(string)
+  }))
+}
+variable "pfmsec_security_center_contact_name" {
+  type    = string
+  default = null
+}
+variable "pfmsec_security_center_contact_email" {
+  type    = string
+  default = null
+}
+variable "pfmsec_security_center_contact_phone" {
+  type    = string
+  default = null
+}
+variable "pfmsec_security_center_resources_and_tiers" {
+  type = list(object({
+    resource_type = string
+    tier          = string
+  }))
+  default = [
+    {
+      resource_type = "StorageAccounts",
+      tier          = "Free"
+    },
+    {
+      resource_type = "VirtualMachines",
+      tier          = "Free"
+    }
+  ]
 }
 
-variable "hub_network_name" {
-  
+### Network module variables
+
+variable "pfmnet_client_certificate_password" {}
+variable "pfmnet_client_certificate_path" {}
+variable "pfmnet_client_id" {}
+variable "pfmnet_tenant_id" {}
+variable "pfmnet_subscription_id" {}
+
+variable "pfmnet_resource_group_name" {
+  type    = string
+  default = null
 }
-
-variable "hub_network_address_space" {
-  
+variable "pfmnet_hub_objects_common_tags" {
+  type    = map(string)
+  default = {}
 }
-
-variable "hub_network_subnet_gateway_address_prefixes" {
-
+variable "pfmnet_hub_network_name" {
+  type    = string
+  default = null
 }
-
-variable "hub_network_subnet_backup_name" {
-  
+variable "pfmnet_hub_network_tags" {
+  type    = map(string)
+  default = {}
 }
-
-variable "hub_network_subnet_backup_address_prefixes" {
-
+variable "pfmnet_hub_network_address_space" {
+  type    = list(string)
+  default = ["10.10.0.0/16"]
 }
-
-variable "hub_virtual_network_gateway_public_ip_name" {
-  
+variable "pfmnet_hub_network_subnet_gateway_address_prefixes" {
+  type    = list(string)
+  default = ["10.10.0.0/24"]
 }
-
-
-variable "hub_virtual_network_gateway_name" {
-  
+variable "pfmnet_hub_network_subnet_backup_name" {
+  type    = string
+  default = null
 }
-
-variable "hub_local_network_gateway_onprem_name" {
-  
+variable "pfmnet_hub_network_subnet_backup_address_prefixes" {
+  type    = list(string)
+  default = ["10.10.1.0/24"]
 }
-
-variable "hub_local_network_gateway_onprem_address" {
-  
+variable "pfmnet_network_watcher_name" {
+  type    = string
+  default = null
 }
-
-variable "hub_local_network_gateway_onprem_address_space" {
-  
+variable "pfmnet_network_watcher_tags" {
+  type    = map(string)
+  default = {}
 }
-
-variable "hub_virtual_network_gateway_connection_onprem_name" {
-  
+variable "pfmnet_hub_virtual_network_gateway_public_ip_name" {
+  type    = string
+  default = null
 }
-
-variable "hub_virtual_network_gateway_connection_onprem_key" {
-  
+variable "pfmnet_hub_virtual_network_gateway_public_ip_tags" {
+  type    = map(string)
+  default = {}
 }
-
-variable "projects_resource_groups_names" {
-  
+variable "pfmnet_hub_virtual_network_gateway_name" {
+  type    = string
+  default = null
 }
-
-variable "projects_network_configuration" {
-  type = map(object({
-    virtual_network_name = string
+variable "pfmnet_hub_virtual_network_gateway_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmnet_hub_local_network_gateway_onprem_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_local_network_gateway_onprem_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmnet_hub_local_network_gateway_onprem_address" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_local_network_gateway_onprem_address_space" {
+  type    = list(string)
+  default = []
+}
+variable "pfmnet_hub_virtual_network_gateway_connection_onprem_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_virtual_network_gateway_connection_onprem_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmnet_hub_virtual_network_gateway_connection_onprem_key" {
+  type      = string
+  default   = null
+  sensitive = true
+}
+variable "pfmnet_projects_network_configuration" {
+  type = list(object({
+    project_id                    = string
+    resource_group_name           = string
+    virtual_network_name          = string
+    virtual_network_tags          = map(string)
     virtual_network_address_space = list(string)
-    virtual_network_subnets = map(object({
-      subnet_name = string
+    virtual_network_subnets = list(object({
+      subnet_name             = string
       subnet_address_prefixes = list(string)
     }))
     create_peering = bool
   }))
-}
-
-# Project module variables dev_playground
-
-variable "project_dev_playground_resource_group_name" {
-  
-}
-
-variable "project_dev_playground_resource_group_location" {
-  
-}
-
-variable "project_dev_playground_network_name" {
-  
-}
-
-## Project-defined
-
-variable "project_dev_playground_vngtest_subnet_name" {
-  
-}
-
-variable "project_dev_playground_vngtest_vm_name" {
-  
-}
-
-variable "project_dev_playground_vngtest_network_interface_name" {
-  
-}
-
-variable "project_dev_playground_vngtest_vm_ssh_public_key_path" {
-  
-}
-
-variable "project_dev_playground_vngtest_vm_image_details" {
-  
-}
-
-# Project module variables prd_kubespace
-
-variable "project_prd_kubespace_resource_group_name" {
-  
-}
-
-variable "project_prd_kubespace_resource_group_location" {
-  
-}
-
-variable "project_prd_kubespace_network_name" {
-  
-}
-
-## Project-defined
-
-variable "project_prd_kubespace_vngtest_subnet_name" {
-  
-}
-
-variable "project_prd_kubespace_vngtest_vm_name" {
-  
-}
-
-variable "project_prd_kubespace_vngtest_network_interface_name" {
-  
-}
-
-variable "project_prd_kubespace_vngtest_vm_ssh_public_key_path" {
-  
-}
-
-variable "project_prd_kubespace_vngtest_vm_image_details" {
-  
+  default = []
 }
