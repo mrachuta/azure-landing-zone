@@ -19,7 +19,7 @@ resource "azurerm_policy_definition" "pfmmgmt_allowed_locations" {
 
 resource "azurerm_subscription_policy_assignment" "pfmmgmt_allowed_locations" {
   name                 = "pas-prd-pfmmgmt-allowed-locations-01"
-  display_name         = "PFMMGT-1: Allow only particular locations for resources"
+  display_name         = "PFMMGMT-1: Allow only particular locations for resources"
   subscription_id      = data.azurerm_subscription.current.id
   policy_definition_id = azurerm_policy_definition.pfmmgmt_allowed_locations.id
 
@@ -36,7 +36,7 @@ resource "azurerm_policy_definition" "pfmmgmt_allowed_environment_tag_values" {
   name         = "pde-prd-pfmmgmt-allowed-environment-tag-values-01"
   policy_type  = "Custom"
   mode         = "All"
-  display_name = "Deny resources with invalid environment tag values"
+  display_name = "Audit resources with invalid environment tag values"
 
   policy_rule = jsonencode({
     if = {
@@ -64,7 +64,34 @@ resource "azurerm_policy_definition" "pfmmgmt_allowed_environment_tag_values" {
       ]
     }
     then = {
-      effect = "Deny"
+      effect = "Audit"
+    }
+  })
+}
+
+resource "azurerm_policy_definition" "pfmmgmt_audit_tag" {
+  name         = "pde-prd-pfmmgmt-audit-tag-01"
+  policy_type  = "Custom"
+  mode         = "All"
+  display_name = "Audit existence of a tag"
+
+  policy_rule = jsonencode({
+    if = {
+      field  = "[concat('tags[', parameters('tagName'), ']')]"
+      exists = false
+    }
+    then = {
+      effect = "Audit"
+    }
+  })
+
+  parameters = jsonencode({
+    tagName = {
+      type = "String"
+      metadata = {
+        displayName = "Tag Name"
+        description = "Name of the tag, such as 'environment'"
+      }
     }
   })
 }
@@ -72,12 +99,13 @@ resource "azurerm_policy_definition" "pfmmgmt_allowed_environment_tag_values" {
 # Skipped for RG's to do not block automatic RG creation by Azure without tags
 resource "azurerm_policy_set_definition" "pfmmgmt_required_tags" {
   name         = "psd-prd-pfmmgmt-required-tags-01"
-  display_name = "Require custom tags with valid values"
+  display_name = "Audit resources without custom tags with valid values"
   policy_type  = "Custom"
 
   lifecycle {
     replace_triggered_by = [
-      azurerm_policy_definition.pfmmgmt_allowed_environment_tag_values.id
+      azurerm_policy_definition.pfmmgmt_allowed_environment_tag_values.id,
+      azurerm_policy_definition.pfmmgmt_audit_tag.id
     ]
   }
 
@@ -88,25 +116,25 @@ resource "azurerm_policy_set_definition" "pfmmgmt_required_tags" {
 
   # Require project_full_name tag
   policy_definition_reference {
-    policy_definition_id = data.azurerm_policy_definition.pfmmgmt_require_tag.id
+    policy_definition_id = azurerm_policy_definition.pfmmgmt_audit_tag.id
     parameter_values     = jsonencode({ tagName = { value = "project_full_name" } })
   }
 
   # Require project_id tag
   policy_definition_reference {
-    policy_definition_id = data.azurerm_policy_definition.pfmmgmt_require_tag.id
+    policy_definition_id = azurerm_policy_definition.pfmmgmt_audit_tag.id
     parameter_values     = jsonencode({ tagName = { value = "project_id" } })
   }
 
   # Require owner tag
   policy_definition_reference {
-    policy_definition_id = data.azurerm_policy_definition.pfmmgmt_require_tag.id
+    policy_definition_id = azurerm_policy_definition.pfmmgmt_audit_tag.id
     parameter_values     = jsonencode({ tagName = { value = "owner" } })
   }
 
   # Require cost_center tag
   policy_definition_reference {
-    policy_definition_id = data.azurerm_policy_definition.pfmmgmt_require_tag.id
+    policy_definition_id = azurerm_policy_definition.pfmmgmt_audit_tag.id
     parameter_values     = jsonencode({ tagName = { value = "cost_center" } })
   }
 
@@ -114,14 +142,14 @@ resource "azurerm_policy_set_definition" "pfmmgmt_required_tags" {
 
 resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   name                 = "pas-prd-pfmmgmt-required-tags-on-resources-01"
-  display_name         = "PFMMGMT-2: Require tags on resources (environment, project_full_name, project_id, owner, cost_center) with valid values"
+  display_name         = "PFMMGMT-2: Audit tags on resources (environment, project_full_name, project_id, owner, cost_center) with valid values"
   subscription_id      = data.azurerm_subscription.current.id
   policy_definition_id = azurerm_policy_set_definition.pfmmgmt_required_tags.id
 
   non_compliance_message {
     content                        = <<-EOT
       Your resource needs to have the required tag environment with value from range: ${join(", ", local.environments)}.
-      Please update your resource with the required tag and value and redeploy.
+      Please update your resource with the required tag and value.
     EOT
     policy_definition_reference_id = azurerm_policy_set_definition.pfmmgmt_required_tags.policy_definition_reference[0].reference_id
   }
@@ -129,7 +157,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   non_compliance_message {
     content                        = <<-EOT
       Your resource needs to have the required tag project_full_name with value.
-      Please update your resource with the required tag and value and redeploy.
+      Please update your resource with the required tag and value.
     EOT
     policy_definition_reference_id = azurerm_policy_set_definition.pfmmgmt_required_tags.policy_definition_reference[1].reference_id
   }
@@ -137,7 +165,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   non_compliance_message {
     content                        = <<-EOT
       Your resource needs to have the required tag project_id with value.
-      Please update your resource with the required tag and value and redeploy.
+      Please update your resource with the required tag and value.
     EOT
     policy_definition_reference_id = azurerm_policy_set_definition.pfmmgmt_required_tags.policy_definition_reference[2].reference_id
   }
@@ -145,7 +173,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   non_compliance_message {
     content                        = <<-EOT
       Your resource needs to have the required tag owner with value.
-      Please update your resource with the required tag and value and redeploy.
+      Please update your resource with the required tag and value.
     EOT
     policy_definition_reference_id = azurerm_policy_set_definition.pfmmgmt_required_tags.policy_definition_reference[3].reference_id
   }
@@ -153,7 +181,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   non_compliance_message {
     content                        = <<-EOT
       Your resource needs to have the required tag cost_center with value.
-      Please update your resource with the required tag and value and redeploy.
+      Please update your resource with the required tag and value.
     EOT
     policy_definition_reference_id = azurerm_policy_set_definition.pfmmgmt_required_tags.policy_definition_reference[4].reference_id
   }
@@ -163,7 +191,7 @@ resource "azurerm_policy_definition" "pfmmgmt_secure_transfer_storage" {
   name         = "pde-prd-pfmmgmt-secure-transfer-storage-01"
   policy_type  = "Custom"
   mode         = "All"
-  display_name = "Deny Storage Accounts without secure transfer enabled"
+  display_name = "Audit Storage Accounts without secure transfer enabled"
 
   policy_rule = jsonencode({
     if = {
@@ -179,7 +207,7 @@ resource "azurerm_policy_definition" "pfmmgmt_secure_transfer_storage" {
       ]
     }
     then = {
-      effect = "Deny"
+      effect = "Audit"
     }
   })
 }
@@ -198,7 +226,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_secure_transfer_stora
   }
 }
 
-resource "azurerm_policy_definition" "pfmmgmt_deny_public_ip" {
+resource "azurerm_policy_definition" "pfmmgmt_public_ip" {
   name         = "pde-prd-pfmmgmt-deny-public-ip-01"
   policy_type  = "Custom"
   mode         = "All"
@@ -215,16 +243,17 @@ resource "azurerm_policy_definition" "pfmmgmt_deny_public_ip" {
   })
 }
 
-resource "azurerm_subscription_policy_assignment" "pfmmgmt_deny_public_ip" {
+resource "azurerm_subscription_policy_assignment" "pfmmgmt_public_ip" {
   name                 = "pas-prd-pfmmgmt-deny-public-ip-01"
   display_name         = "PFMMGMT-4: Deny Public IP Addresses usage"
   subscription_id      = data.azurerm_subscription.current.id
-  policy_definition_id = azurerm_policy_definition.pfmmgmt_deny_public_ip.id
+  policy_definition_id = azurerm_policy_definition.pfmmgmt_public_ip.id
 
   non_compliance_message {
     content = <<-EOT
       Public IP Addresses are not allowed to be used in this subscription.
       Please update your resource configuration to remove Public IP Address and redeploy.
+      If you still need public IP address, request exclusion.
     EOT
   }
 
@@ -283,7 +312,7 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_disks_type_and_size" 
   }
 }
 
-resource "azurerm_policy_definition" "pfmmgmt_deny_non_free_aks" {
+resource "azurerm_policy_definition" "pfmmgmt_non_free_aks" {
   name         = "pde-prd-pfmmgmt-deny-non-free-aks-01"
   policy_type  = "Custom"
   mode         = "All"
@@ -308,11 +337,11 @@ resource "azurerm_policy_definition" "pfmmgmt_deny_non_free_aks" {
   })
 }
 
-resource "azurerm_subscription_policy_assignment" "pfmmgmt_deny_non_free_aks" {
+resource "azurerm_subscription_policy_assignment" "pfmmgmt_non_free_aks" {
   name                 = "pas-prd-pfmmgmt-deny-non-free-aks-01"
   display_name         = "PFMMGMT-6: Deny Kubernetes clusters not in Free tier"
   subscription_id      = data.azurerm_subscription.current.id
-  policy_definition_id = azurerm_policy_definition.pfmmgmt_deny_non_free_aks.id
+  policy_definition_id = azurerm_policy_definition.pfmmgmt_non_free_aks.id
 
   non_compliance_message {
     content = <<-EOT
@@ -322,6 +351,82 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_deny_non_free_aks" {
   }
 }
 
-# TODO: policy deny subnets without NSG
-# TODO: audit vms without CMEK
+resource "azurerm_policy_definition" "pfmmgmt_subnets_nsg" {
+  name         = "pde-prd-pfmmgmt-subnets-nsg-01"
+  policy_type  = "Custom"
+  mode         = "All"
+  display_name = "Audit subnets without Network Security Group"
+
+  policy_rule = jsonencode({
+    if = {
+      allOf = [
+        {
+          field  = "type"
+          equals = "Microsoft.Network/virtualNetworks/subnets"
+        },
+        {
+          field  = "Microsoft.Network/virtualNetworks/subnets/networkSecurityGroup.id"
+          exists = false
+        }
+      ]
+    }
+    then = {
+      effect = "Audit"
+    }
+  })
+}
+
+resource "azurerm_subscription_policy_assignment" "pfmmgmt_subnets_nsg" {
+  name                 = "pas-prd-pfmmgmt-subnets-nsg-01"
+  display_name         = "PFMMGMT-7: Subnets should have a Network Security Group"
+  subscription_id      = data.azurerm_subscription.current.id
+  policy_definition_id = azurerm_policy_definition.pfmmgmt_subnets_nsg.id
+
+  non_compliance_message {
+    content = <<-EOT
+      Your subnet needs to have a Network Security Group associated.
+      Please associate an NSG to the subnet and redeploy.
+    EOT
+  }
+}
+
+resource "azurerm_policy_definition" "pfmmgmt_vms_cmek" {
+  name         = "pde-prd-pfmmgmt-vms-cmek-01"
+  policy_type  = "Custom"
+  mode         = "All"
+  display_name = "Audit Virtual Machines without Customer Managed Encryption Keys"
+
+  policy_rule = jsonencode({
+    if = {
+      allOf = [
+        {
+          field  = "type"
+          equals = "Microsoft.Compute/virtualMachines"
+        },
+        {
+          field  = "Microsoft.Compute/virtualMachines/storageProfile.osDisk.managedDisk.diskEncryptionSet.id"
+          exists = false
+        }
+      ]
+    }
+    then = {
+      effect = "Audit"
+    }
+  })
+}
+
+resource "azurerm_subscription_policy_assignment" "pfmmgmt_vms_cmek" {
+  name                 = "pas-prd-pfmmgmt-vms-cmek-01"
+  display_name         = "PFMMGMT-8: Virtual machines should use customer-managed encryption keys"
+  subscription_id      = data.azurerm_subscription.current.id
+  policy_definition_id = azurerm_policy_definition.pfmmgmt_vms_cmek.id
+
+  non_compliance_message {
+    content = <<-EOT
+      Your Virtual Machine needs to have customer-managed encryption keys enabled for its disks.
+      Please update your Virtual Machine configuration and redeploy.
+    EOT
+  }
+}
+
 # TODO: key needs to be valid for particular env (lab key = lab disk)

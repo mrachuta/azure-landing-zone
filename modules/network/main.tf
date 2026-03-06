@@ -16,11 +16,64 @@ resource "azurerm_subnet" "pfmnet_hub_network_subnet_gateway" {
   address_prefixes     = var.pfmnet_hub_network_subnet_gateway_address_prefixes
 }
 
+## Not supported
+# resource "azurerm_network_security_group" "pfmnet_hub_network_subnet_gateway_network_security_group" {
+#   name                = var.pfmnet_hub_network_subnet_gateway_network_security_group_name
+#   location            = data.azurerm_resource_group.pfmnet_resource_group_name.location
+#   resource_group_name = data.azurerm_resource_group.pfmnet_resource_group_name.name
+#   tags = merge(var.pfmnet_hub_objects_common_tags, var.pfmnet_hub_network_subnet_gateway_network_security_group_tags)
+#   dynamic "security_rule" {
+#     for_each = var.pfmnet_hub_network_subnet_gateway_network_security_group_rules
+#     content {
+#       name                       = lookup(security_rule.value, "name", null)
+#       priority                   = lookup(security_rule.value, "priority", null)
+#       direction                  = lookup(security_rule.value, "direction", null)
+#       access                     = lookup(security_rule.value, "access", null)
+#       protocol                   = lookup(security_rule.value, "protocol", null)
+#       source_port_range          = lookup(security_rule.value, "source_port_range", null)
+#       destination_port_range     = lookup(security_rule.value, "destination_port_range", null)
+#       source_address_prefix      = lookup(security_rule.value, "source_address_prefix", null)
+#       destination_address_prefix = lookup(security_rule.value, "destination_address_prefix", null)
+#     }
+#   }
+# }
+# resource "azurerm_subnet_network_security_group_association" "pfmnet_hub_network_subnet_gateway_network_security_group_association" {
+#   subnet_id                 = azurerm_subnet.pfmnet_hub_network_subnet_gateway.id
+#   network_security_group_id = azurerm_network_security_group.pfmnet_hub_network_subnet_gateway_network_security_group.id
+# }
+
 resource "azurerm_subnet" "pfmnet_hub_network_subnet_backup" {
   name                 = var.pfmnet_hub_network_subnet_backup_name
   resource_group_name  = data.azurerm_resource_group.pfmnet_resource_group_name.name
   virtual_network_name = azurerm_virtual_network.pfmnet_hub_network.name
   address_prefixes     = var.pfmnet_hub_network_subnet_backup_address_prefixes
+}
+
+resource "azurerm_network_security_group" "pfmnet_hub_network_subnet_backup_network_security_group" {
+  name                = var.pfmnet_hub_network_subnet_backup_network_security_group_name
+  location            = data.azurerm_resource_group.pfmnet_resource_group_name.location
+  resource_group_name = data.azurerm_resource_group.pfmnet_resource_group_name.name
+  tags                = merge(var.pfmnet_hub_objects_common_tags, var.pfmnet_hub_network_subnet_backup_network_security_group_tags)
+
+  dynamic "security_rule" {
+    for_each = var.pfmnet_hub_network_subnet_backup_network_security_group_rules
+    content {
+      name                       = lookup(security_rule.value, "name", null)
+      priority                   = lookup(security_rule.value, "priority", null)
+      direction                  = lookup(security_rule.value, "direction", null)
+      access                     = lookup(security_rule.value, "access", null)
+      protocol                   = lookup(security_rule.value, "protocol", null)
+      source_port_range          = lookup(security_rule.value, "source_port_range", null)
+      destination_port_range     = lookup(security_rule.value, "destination_port_range", null)
+      source_address_prefix      = lookup(security_rule.value, "source_address_prefix", null)
+      destination_address_prefix = lookup(security_rule.value, "destination_address_prefix", null)
+    }
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "pfmnet_hub_network_subnet_backup_network_security_group_association" {
+  subnet_id                 = azurerm_subnet.pfmnet_hub_network_subnet_backup.id
+  network_security_group_id = azurerm_network_security_group.pfmnet_hub_network_subnet_backup_network_security_group.id
 }
 
 resource "azurerm_network_watcher" "pfmnet_network_watcher" {
@@ -115,6 +168,53 @@ resource "azurerm_subnet" "pfmnet_project_network_subnet" {
   resource_group_name  = azurerm_virtual_network.pfmnet_project_network[each.value.project_id].resource_group_name
   virtual_network_name = azurerm_virtual_network.pfmnet_project_network[each.value.project_id].name
   address_prefixes     = lookup(each.value, "subnet_address_prefixes")
+}
+
+resource "azurerm_network_security_group" "pfmnet_project_network_subnet_network_security_group" {
+  for_each = { for combined in flatten([
+    for p in var.pfmnet_projects_network_configuration : [
+      for s in p.virtual_network_subnets : {
+        project_id                          = p.project_id
+        subnet_name                         = s.subnet_name
+        subnet_network_security_group_name  = s.subnet_network_security_group_name
+        subnet_network_security_group_tags  = s.subnet_network_security_group_tags
+        subnet_network_security_group_rules = s.subnet_network_security_group_rules
+      }
+    ]
+  ]) : "${combined.project_id}_${combined.subnet_name}" => combined }
+  name                = lookup(each.value, "subnet_network_security_group_name", null)
+  location            = azurerm_virtual_network.pfmnet_project_network[each.value.project_id].location
+  resource_group_name = azurerm_virtual_network.pfmnet_project_network[each.value.project_id].resource_group_name
+  tags                = merge(var.pfmnet_hub_objects_common_tags, each.value.subnet_network_security_group_tags)
+
+  dynamic "security_rule" {
+    for_each = each.value.subnet_network_security_group_rules
+    content {
+      name                       = lookup(security_rule.value, "name", null)
+      priority                   = lookup(security_rule.value, "priority", null)
+      direction                  = lookup(security_rule.value, "direction", null)
+      access                     = lookup(security_rule.value, "access", null)
+      protocol                   = lookup(security_rule.value, "protocol", null)
+      source_port_range          = lookup(security_rule.value, "source_port_range", null)
+      destination_port_range     = lookup(security_rule.value, "destination_port_range", null)
+      source_address_prefix      = lookup(security_rule.value, "source_address_prefix", null)
+      destination_address_prefix = lookup(security_rule.value, "destination_address_prefix", null)
+    }
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "pfmnet_project_network_subnet_network_security_group_association" {
+  for_each = { for combined in flatten([
+    for p in var.pfmnet_projects_network_configuration : [
+      for s in p.virtual_network_subnets : {
+        project_id  = p.project_id
+        subnet_name = s.subnet_name
+      }
+    ]
+  ]) : "${combined.project_id}_${combined.subnet_name}" => combined }
+
+  subnet_id                 = azurerm_subnet.pfmnet_project_network_subnet[each.key].id
+  network_security_group_id = azurerm_network_security_group.pfmnet_project_network_subnet_network_security_group[each.key].id
 }
 
 resource "azurerm_virtual_network_peering" "pfmnet_project_network_peering_from_hub" {
