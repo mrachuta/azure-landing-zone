@@ -86,6 +86,7 @@ module "security" {
   pfmsec_audit_logs_subscription_audit_log_forward_name = var.pfmsec_audit_logs_subscription_audit_log_forward_name
   pfmsec_key_vault_name                                 = var.pfmsec_key_vault_name
   pfmsec_key_vault_tags                                 = var.pfmsec_key_vault_tags
+  pfmsec_default_cmek_admin_groups                      = var.pfmsec_default_cmek_admin_groups
   pfmsec_default_cmek_disk_key                          = var.pfmsec_default_cmek_disk_key
 
 }
@@ -114,15 +115,28 @@ module "network" {
   pfmnet_hub_network_tags                            = var.pfmnet_hub_network_tags
   pfmnet_hub_network_address_space                   = var.pfmnet_hub_network_address_space
   pfmnet_hub_network_subnet_gateway_address_prefixes = var.pfmnet_hub_network_subnet_gateway_address_prefixes
+  pfmnet_hub_nat_gateway_public_ip_name              = var.pfmnet_hub_nat_gateway_public_ip_name
+  pfmnet_hub_nat_gateway_public_ip_tags              = var.pfmnet_hub_nat_gateway_public_ip_tags
+  pfmnet_hub_nat_gateway_name                        = var.pfmnet_hub_nat_gateway_name
+  pfmnet_hub_nat_gateway_tags                        = var.pfmnet_hub_nat_gateway_tags
   ## Not supported
   # pfmnet_hub_network_subnet_gateway_network_security_group_name  = var.pfmnet_hub_network_subnet_gateway_network_security_group_name
   # pfmnet_hub_network_subnet_gateway_network_security_group_tags  = var.pfmnet_hub_network_subnet_gateway_network_security_group_tags
   # pfmnet_hub_network_subnet_gateway_network_security_group_rules = var.pfmnet_hub_network_subnet_gateway_network_security_group_rules
-  pfmnet_hub_network_subnet_backup_name                         = var.pfmnet_hub_network_subnet_backup_name
-  pfmnet_hub_network_subnet_backup_address_prefixes             = var.pfmnet_hub_network_subnet_backup_address_prefixes
-  pfmnet_hub_network_subnet_backup_network_security_group_name  = var.pfmnet_hub_network_subnet_backup_network_security_group_name
-  pfmnet_hub_network_subnet_backup_network_security_group_tags  = var.pfmnet_hub_network_subnet_backup_network_security_group_tags
-  pfmnet_hub_network_subnet_backup_network_security_group_rules = var.pfmnet_hub_network_subnet_backup_network_security_group_rules
+  pfmnet_hub_network_subnet_nat_name                            = var.pfmnet_hub_network_subnet_nat_name
+  pfmnet_hub_network_subnet_nat_address_prefixes                = var.pfmnet_hub_network_subnet_nat_address_prefixes
+  pfmnet_hub_network_subnet_nat_default_outbound_access_enabled = var.pfmnet_hub_network_subnet_nat_default_outbound_access_enabled
+  pfmnet_hub_network_subnet_nat_network_security_group_name     = var.pfmnet_hub_network_subnet_nat_network_security_group_name
+  pfmnet_hub_network_subnet_nat_network_security_group_tags     = var.pfmnet_hub_network_subnet_nat_network_security_group_tags
+  pfmnet_hub_network_subnet_nat_network_security_group_rules    = var.pfmnet_hub_network_subnet_nat_network_security_group_rules
+  pfmnet_hub_nat_vm_route_table_name                            = var.pfmnet_hub_nat_vm_route_table_name
+  pfmnet_hub_nat_route_via_nat_vm_name                          = var.pfmnet_hub_nat_route_via_nat_vm_name
+  pfmnet_hub_nat_vm_name                                        = var.pfmnet_hub_nat_vm_name
+  pfmnet_hub_nat_vm_tags                                        = var.pfmnet_hub_nat_vm_tags
+  pfmnet_hub_nat_vm_private_ip_address                          = var.pfmnet_hub_nat_vm_private_ip_address
+  pfmnet_nat_vm_ssh_username                                    = var.pfmnet_nat_vm_ssh_username
+  pfmnet_nat_vm_ssh_key_path                                    = var.pfmnet_nat_vm_ssh_key_path
+  pfmnet_nat_vm_disk_encryption_set_id                          = var.pfmnet_nat_vm_disk_encryption_set_id
   pfmnet_network_watcher_name                                   = var.pfmnet_network_watcher_name
   pfmnet_network_watcher_tags                                   = var.pfmnet_network_watcher_tags
   pfmnet_hub_virtual_network_gateway_public_ip_name             = var.pfmnet_hub_virtual_network_gateway_public_ip_name
