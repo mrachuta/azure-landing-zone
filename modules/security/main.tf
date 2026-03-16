@@ -44,12 +44,26 @@ resource "azurerm_key_vault" "pfmsec_key_vault" {
 #   key_permissions = ["Backup", "Create", "Decrypt", "Delete", "Encrypt", "Get", "Import", "List", "Purge", "Recover", "Restore", "Sign", "UnwrapKey", "Update", "Verify", "WrapKey", "Release", "Rotate", "GetRotationPolicy", "SetRotationPolicy"]
 # }
 
-resource "azurerm_key_vault_access_policy" "pfmsec_default_cmek_disk_full_permissions_to_service_principal" {
+resource "azurerm_key_vault_access_policy" "pfmsec_key_vault_full_permissions_to_service_principal" {
   key_vault_id = azurerm_key_vault.pfmsec_key_vault.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = data.azurerm_client_config.current.object_id
 
-  key_permissions = ["Backup", "Create", "Decrypt", "Delete", "Encrypt", "Get", "Import", "List", "Purge", "Recover", "Restore", "Sign", "UnwrapKey", "Update", "Verify", "WrapKey", "Release", "Rotate", "GetRotationPolicy", "SetRotationPolicy"]
+  certificate_permissions = local.admin_certificate_permissions
+  key_permissions = local.admin_key_permissions
+  secret_permissions = local.admin_secret_permissions
+}
+
+# TODO: move to identity
+resource "azurerm_key_vault_access_policy" "pfmsec_key_vault_full_permissions_to_to_admin_groups" {
+  for_each     = { for g in var.pfmsec_default_cmek_admin_groups : g.id => g }
+  key_vault_id = azurerm_key_vault.pfmsec_key_vault.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = each.key
+
+  certificate_permissions = local.admin_certificate_permissions
+  key_permissions = local.admin_key_permissions
+  secret_permissions = local.admin_secret_permissions
 }
 
 resource "azurerm_key_vault_key" "pfmsec_default_cmek_disk_key" {
@@ -60,7 +74,7 @@ resource "azurerm_key_vault_key" "pfmsec_default_cmek_disk_key" {
   key_size     = 4096
   key_opts     = ["decrypt", "encrypt", "sign", "unwrapKey", "verify", "wrapKey"]
 
-  depends_on = [azurerm_key_vault_access_policy.pfmsec_default_cmek_disk_full_permissions_to_service_principal]
+  depends_on = [azurerm_key_vault_access_policy.pfmsec_key_vault_full_permissions_to_service_principal]
   tags       = merge(var.pfmsec_security_objects_common_tags, lookup(each.value, "tags", null))
 }
 
@@ -76,7 +90,7 @@ resource "azurerm_disk_encryption_set" "pfmsec_default_cmek_disk" {
     type = "SystemAssigned"
   }
 
-  depends_on = [azurerm_key_vault_access_policy.pfmsec_default_cmek_disk_full_permissions_to_service_principal]
+  depends_on = [azurerm_key_vault_access_policy.pfmsec_key_vault_full_permissions_to_service_principal]
 }
 
 resource "azurerm_key_vault_access_policy" "pfmsec_default_cmek_disk_user_to_identity" {
@@ -86,7 +100,6 @@ resource "azurerm_key_vault_access_policy" "pfmsec_default_cmek_disk_user_to_ide
   object_id    = azurerm_disk_encryption_set.pfmsec_default_cmek_disk[each.key].identity[0].principal_id
 
   key_permissions = ["Get", "WrapKey", "UnwrapKey"]
-  #depends_on      = [azurerm_disk_encryption_set.pfmsec_default_cmek]
 }
 
 resource "azurerm_security_center_contact" "pfmsec_security_center_contact" {
