@@ -6,10 +6,18 @@ resource "azurerm_policy_definition" "pfmmgmt_allowed_locations" {
 
   policy_rule = jsonencode({
     if = {
-      not = {
-        field = "location"
-        in    = var.pfmmgmt_allowed_locations
-      }
+      allOf = [
+        {
+          not = {
+            field = "location"
+            in    = var.pfmmgmt_allowed_locations
+          }
+        },
+        {
+          field     = "tags['lz-skip-policy-PFMMGMT-1']"
+          notEquals = "true"
+        }
+      ]
     }
     then = {
       effect = "Deny"
@@ -187,6 +195,50 @@ resource "azurerm_subscription_policy_assignment" "pfmmgmt_required_tags" {
   }
 }
 
+resource "azurerm_policy_definition" "pfmmgmt_audit_lz_skip_tag" {
+  name         = "pde-prd-pfmmgmt-audit-lz-skip-tag-01"
+  policy_type  = "Custom"
+  mode         = "All"
+  display_name = "Audit resources with lz-skip-policy bypass tags"
+
+  policy_rule = jsonencode({
+    if = {
+      anyOf = [
+        {
+          field  = "tags['lz-skip-policy-PFMMGMT-1']"
+          exists = true
+        },
+        {
+          field  = "tags['lz-skip-policy-PFMMGMT-4']"
+          exists = true
+        },
+        {
+          field  = "tags['lz-skip-policy-PFMMGMT-5']"
+          exists = true
+        },
+        {
+          field  = "tags['lz-skip-policy-PFMMGMT-6']"
+          exists = true
+        }
+      ]
+    }
+    then = {
+      effect = "Audit"
+    }
+  })
+}
+
+resource "azurerm_subscription_policy_assignment" "pfmmgmt_audit_lz_skip_tag" {
+  name                 = "pas-prd-pfmmgmt-audit-lz-skip-tag-01"
+  display_name         = "PFMMGMT-0: Audit resources with lz-skip-policy bypass tags"
+  subscription_id      = data.azurerm_subscription.current.id
+  policy_definition_id = azurerm_policy_definition.pfmmgmt_audit_lz_skip_tag.id
+
+  non_compliance_message {
+    content = "This resource has a policy bypass tag applied. Ensure this is authorized and follows the exception process."
+  }
+}
+
 resource "azurerm_policy_definition" "pfmmgmt_secure_transfer_storage" {
   name         = "pde-prd-pfmmgmt-secure-transfer-storage-01"
   policy_type  = "Custom"
@@ -234,8 +286,16 @@ resource "azurerm_policy_definition" "pfmmgmt_public_ip" {
 
   policy_rule = jsonencode({
     if = {
-      field  = "type"
-      equals = "Microsoft.Network/publicIPAddresses"
+      allOf = [
+        {
+          field  = "type"
+          equals = "Microsoft.Network/publicIPAddresses"
+        },
+        {
+          field     = "tags['lz-skip-policy-PFMMGMT-4']"
+          notEquals = "true"
+        }
+      ]
     }
     then = {
       effect = "Deny"
@@ -267,26 +327,114 @@ resource "azurerm_policy_definition" "pfmmgmt_disks_type_and_size" {
   name         = "pde-prd-pfmmgmt-disks-type-and-size-01"
   policy_type  = "Custom"
   mode         = "All"
-  display_name = "Deny managed disks not included in Standard_LRS SKU and/or larger than 64GB"
+  display_name = "Deny Virtual Machines, Scale Sets and Managed Disks not included in Standard_LRS SKU and/or larger than 64GB"
 
   policy_rule = jsonencode({
     if = {
       allOf = [
         {
-          field  = "type"
-          equals = "Microsoft.Compute/disks"
+          field     = "tags['lz-skip-policy-PFMMGMT-5']"
+          notEquals = "true"
         },
         {
           anyOf = [
             {
-              field = "Microsoft.Compute/disks/sku.name"
-              notIn = [
-                "Standard_LRS"
+              allOf = [
+                {
+                  field  = "type"
+                  equals = "Microsoft.Compute/disks"
+                },
+                {
+                  anyOf = [
+                    {
+                      field = "Microsoft.Compute/disks/sku.name"
+                      notIn = [
+                        "Standard_LRS"
+                      ]
+                    },
+                    {
+                      field   = "Microsoft.Compute/disks/diskSizeGB"
+                      greater = 64
+                    }
+                  ]
+                }
               ]
             },
             {
-              field   = "Microsoft.Compute/disks/diskSizeGB"
-              greater = 64
+              allOf = [
+                {
+                  field  = "type"
+                  equals = "Microsoft.Compute/virtualMachines"
+                },
+                {
+                  anyOf = [
+                    {
+                      field     = "Microsoft.Compute/virtualMachines/storageProfile.osDisk.managedDisk.storageAccountType"
+                      notEquals = "Standard_LRS"
+                    },
+                    {
+                      field   = "Microsoft.Compute/virtualMachines/storageProfile.osDisk.diskSizeGB"
+                      greater = 64
+                    },
+                    {
+                      count = {
+                        field = "Microsoft.Compute/virtualMachines/storageProfile.dataDisks[*]"
+                        where = {
+                          anyOf = [
+                            {
+                              field     = "Microsoft.Compute/virtualMachines/storageProfile.dataDisks[*].managedDisk.storageAccountType"
+                              notEquals = "Standard_LRS"
+                            },
+                            {
+                              field   = "Microsoft.Compute/virtualMachines/storageProfile.dataDisks[*].diskSizeGB"
+                              greater = 64
+                            }
+                          ]
+                        }
+                      }
+                      greater = 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              allOf = [
+                {
+                  field  = "type"
+                  equals = "Microsoft.Compute/virtualMachineScaleSets"
+                },
+                {
+                  anyOf = [
+                    {
+                      field     = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.osDisk.managedDisk.storageAccountType"
+                      notEquals = "Standard_LRS"
+                    },
+                    {
+                      field   = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.osDisk.diskSizeGB"
+                      greater = 64
+                    },
+                    {
+                      count = {
+                        field = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.dataDisks[*]"
+                        where = {
+                          anyOf = [
+                            {
+                              field     = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.dataDisks[*].managedDisk.storageAccountType"
+                              notEquals = "Standard_LRS"
+                            },
+                            {
+                              field   = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.dataDisks[*].diskSizeGB"
+                              greater = 64
+                            }
+                          ]
+                        }
+                      }
+                      greater = 0
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -300,14 +448,14 @@ resource "azurerm_policy_definition" "pfmmgmt_disks_type_and_size" {
 
 resource "azurerm_subscription_policy_assignment" "pfmmgmt_disks_type_and_size" {
   name                 = "pas-prd-pfmmgmt-disks-type-and-size-01"
-  display_name         = "PFMMGMT-5: Use only disks included in Standard_LRS SKU and/or smaller than 64GB"
+  display_name         = "PFMMGMT-5: Use only disks included in Standard_LRS SKU and/or smaller than 64GB for VMs, Scale Sets and Disks"
   subscription_id      = data.azurerm_subscription.current.id
   policy_definition_id = azurerm_policy_definition.pfmmgmt_disks_type_and_size.id
 
   non_compliance_message {
     content = <<-EOT
-      Your managed disk needs to be of type included in Standard_LRS SKU and/or smaller than 64GB.
-      Please update your resource configuration to use allowed disk types and sizes and redeploy.
+      Your Virtual Machine, Scale Set or Disk needs to use Standard_LRS SKU and/or be smaller than 64GB.
+      Please update your resource configuration and redeploy.
     EOT
   }
 }
@@ -328,6 +476,10 @@ resource "azurerm_policy_definition" "pfmmgmt_non_free_aks" {
         {
           field     = "Microsoft.ContainerService/managedClusters/sku.tier"
           notEquals = "Free"
+        },
+        {
+          field     = "tags['lz-skip-policy-PFMMGMT-6']"
+          notEquals = "true"
         }
       ]
     }
@@ -394,18 +546,74 @@ resource "azurerm_policy_definition" "pfmmgmt_vms_cmek" {
   name         = "pde-prd-pfmmgmt-vms-cmek-01"
   policy_type  = "Custom"
   mode         = "All"
-  display_name = "Audit Virtual Machines without Customer Managed Encryption Keys"
+  display_name = "Audit Virtual Machines, Scale Sets and Disks without Customer Managed Encryption Keys"
 
   policy_rule = jsonencode({
     if = {
-      allOf = [
+      anyOf = [
         {
-          field  = "type"
-          equals = "Microsoft.Compute/virtualMachines"
+          allOf = [
+            {
+              field  = "type"
+              equals = "Microsoft.Compute/virtualMachines"
+            },
+            {
+              anyOf = [
+                {
+                  field  = "Microsoft.Compute/virtualMachines/storageProfile.osDisk.managedDisk.diskEncryptionSet.id"
+                  exists = false
+                },
+                {
+                  count = {
+                    field = "Microsoft.Compute/virtualMachines/storageProfile.dataDisks[*]"
+                    where = {
+                      field  = "Microsoft.Compute/virtualMachines/storageProfile.dataDisks[*].managedDisk.diskEncryptionSet.id"
+                      exists = false
+                    }
+                  }
+                  greater = 0
+                }
+              ]
+            }
+          ]
         },
         {
-          field  = "Microsoft.Compute/virtualMachines/storageProfile.osDisk.managedDisk.diskEncryptionSet.id"
-          exists = false
+          allOf = [
+            {
+              field  = "type"
+              equals = "Microsoft.Compute/virtualMachineScaleSets"
+            },
+            {
+              anyOf = [
+                {
+                  field  = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.osDisk.managedDisk.diskEncryptionSet.id"
+                  exists = false
+                },
+                {
+                  count = {
+                    field = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.dataDisks[*]"
+                    where = {
+                      field  = "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.dataDisks[*].managedDisk.diskEncryptionSet.id"
+                      exists = false
+                    }
+                  }
+                  greater = 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          allOf = [
+            {
+              field  = "type"
+              equals = "Microsoft.Compute/disks"
+            },
+            {
+              field  = "Microsoft.Compute/disks/encryption.diskEncryptionSetId"
+              exists = false
+            }
+          ]
         }
       ]
     }
@@ -417,14 +625,14 @@ resource "azurerm_policy_definition" "pfmmgmt_vms_cmek" {
 
 resource "azurerm_subscription_policy_assignment" "pfmmgmt_vms_cmek" {
   name                 = "pas-prd-pfmmgmt-vms-cmek-01"
-  display_name         = "PFMMGMT-8: Virtual machines should use customer-managed encryption keys"
+  display_name         = "PFMMGMT-8: Virtual machines, scale sets and disks should use customer-managed encryption keys"
   subscription_id      = data.azurerm_subscription.current.id
   policy_definition_id = azurerm_policy_definition.pfmmgmt_vms_cmek.id
 
   non_compliance_message {
     content = <<-EOT
-      Your Virtual Machine needs to have customer-managed encryption keys enabled for its disks.
-      Please update your Virtual Machine configuration and redeploy.
+      Your Virtual Machine, Scale Set or Disk needs to have customer-managed encryption keys enabled.
+      Please update your resource configuration and redeploy.
     EOT
   }
 }
