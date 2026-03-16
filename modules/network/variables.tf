@@ -28,6 +28,22 @@ variable "pfmnet_hub_network_subnet_gateway_address_prefixes" {
   type    = list(string)
   default = ["10.10.0.0/24"]
 }
+variable "pfmnet_hub_nat_gateway_public_ip_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_nat_gateway_public_ip_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmnet_hub_nat_gateway_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_nat_gateway_tags" {
+  type    = map(string)
+  default = {}
+}
 ## Not supported
 # variable "pfmnet_hub_network_subnet_gateway_network_security_group_name" {
 #   type    = string
@@ -51,23 +67,27 @@ variable "pfmnet_hub_network_subnet_gateway_address_prefixes" {
 #     }))
 #   default  = []
 # }
-variable "pfmnet_hub_network_subnet_backup_name" {
+variable "pfmnet_hub_network_subnet_nat_name" {
   type    = string
   default = null
 }
-variable "pfmnet_hub_network_subnet_backup_address_prefixes" {
+variable "pfmnet_hub_network_subnet_nat_address_prefixes" {
   type    = list(string)
   default = ["10.10.1.0/24"]
 }
-variable "pfmnet_hub_network_subnet_backup_network_security_group_name" {
+variable "pfmnet_hub_network_subnet_nat_default_outbound_access_enabled" {
+  type    = bool
+  default = true
+}
+variable "pfmnet_hub_network_subnet_nat_network_security_group_name" {
   type    = string
   default = null
 }
-variable "pfmnet_hub_network_subnet_backup_network_security_group_tags" {
+variable "pfmnet_hub_network_subnet_nat_network_security_group_tags" {
   type    = map(string)
   default = {}
 }
-variable "pfmnet_hub_network_subnet_backup_network_security_group_rules" {
+variable "pfmnet_hub_network_subnet_nat_network_security_group_rules" {
   type = list(object({
     name                       = string
     priority                   = number
@@ -80,6 +100,38 @@ variable "pfmnet_hub_network_subnet_backup_network_security_group_rules" {
     destination_address_prefix = string
   }))
   default = []
+}
+variable "pfmnet_hub_nat_vm_route_table_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_nat_route_via_nat_vm_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_nat_vm_name" {
+  type    = string
+  default = null
+}
+variable "pfmnet_hub_nat_vm_tags" {
+  type    = map(string)
+  default = {}
+}
+variable "pfmnet_hub_nat_vm_private_ip_address" {
+  type    = string
+  default = null
+}
+variable "pfmnet_nat_vm_ssh_username" {
+  type    = string
+  default = null
+}
+variable "pfmnet_nat_vm_ssh_key_path" {
+  type    = string
+  default = null
+}
+variable "pfmnet_nat_vm_disk_encryption_set_id" {
+  type    = string
+  default = null
 }
 variable "pfmnet_network_watcher_name" {
   type    = string
@@ -142,10 +194,13 @@ variable "pfmnet_projects_network_configuration" {
     virtual_network_tags          = map(string)
     virtual_network_address_space = list(string)
     virtual_network_subnets = list(object({
-      subnet_name                        = string
-      subnet_address_prefixes            = list(string)
-      subnet_network_security_group_name = string
-      subnet_network_security_group_tags = map(string)
+      subnet_name                            = string
+      subnet_address_prefixes                = list(string)
+      subnet_default_outbound_access_enabled = bool
+      subnet_nat_gateway_association         = bool
+      subnet_route_via_nat_vm                = bool
+      subnet_network_security_group_name     = string
+      subnet_network_security_group_tags     = map(string)
       subnet_network_security_group_rules = list(object({
         name                       = string
         priority                   = number
