@@ -7,19 +7,19 @@ variable "subscription_id" {}
 variable "resource_group_name" {
   description = "The name of the resource group"
   type        = string
-  default     = "rg-prjplaygr"
+  default     = "rgmyproject"
 }
 
 variable "vm_location" {
   description = "The Azure region for the VM"
   type        = string
-  default     = "centralindia"
+  default     = "eastus"
 }
 
 variable "vm_name" {
   description = "The name of the VM and its associated resources"
   type        = string
-  default     = "vmplaygr"
+  default     = "vm01"
 }
 
 variable "vm_subnet_id" {
@@ -48,7 +48,7 @@ variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
   default     = {
-    environment = "playground"
-    project     = "prjplaygr"
+    environment = "dev"
+    project     = "myproject"
   }
 }

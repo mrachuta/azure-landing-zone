@@ -1,0 +1,29 @@
+module "aks" {
+  source = "git::https://github.com/mrachuta/module-azure-aks-cheap-cluster.git?ref=develop"
+
+  existing_rg                                       = var.existing_rg
+  extra_tags                                        = var.extra_tags
+  acr_provision                                     = var.acr_provision
+  acr_custom_region                                 = var.acr_custom_region
+  acr_name                                          = var.acr_name
+  acr_grant_pull_role_to_aks                        = var.acr_grant_pull_role_to_aks
+  aks_provision                                     = var.aks_provision
+  aks_custom_region                                 = var.aks_custom_region
+  aks_name                                          = var.aks_name
+  aks_resources_rg_name                             = var.aks_resources_rg_name
+  aks_outbound_type                                 = var.aks_outbound_type
+  aks_nodes_extra_tags                              = var.aks_nodes_extra_tags
+  aks_api_server_subnetwork_id                      = var.aks_api_server_subnetwork_id
+  aks_node_pool_subnetwork_id                       = var.aks_node_pool_subnetwork_id
+  aks_auth_ip_ranges                                = var.aks_auth_ip_ranges
+  aks_node_count                                    = var.aks_node_count
+  aks_disk_encryption_set_id                        = var.aks_disk_encryption_set_id
+  aks_node_sku                                      = var.aks_node_sku
+  aks_enable_spot_node_pool                         = var.aks_enable_spot_node_pool
+  aks_spot_node_pool_config                         = var.aks_spot_node_pool_config
+  aks_enable_default_node_pool_autoscaling_to_zero  = var.aks_enable_spot_node_pool_autoscaling
+  aks_default_node_pool_autoscaling_to_zero_details = var.aks_default_node_pool_autoscaling_to_zero_details
+  aks_enable_spot_node_pool_autoscaling             = var.aks_enable_spot_node_pool_autoscaling
+  aks_spot_node_pool_autoscaling_details            = var.aks_spot_node_pool_autoscaling_details
+  contapp_provision                                 = var.contapp_provision
+}
